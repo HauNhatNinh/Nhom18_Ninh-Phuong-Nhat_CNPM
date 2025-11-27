@@ -1,0 +1,178 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - KTXReportSystem</title>
+
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+          crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/KTXReportSystem.styles.css" asp-append-version="true" />
+
+    <style>
+        body {
+            font-family: "Inter", sans-serif;
+            background-color: #f7f9fc;
+        }
+        /* NAVBAR */
+        .navbar {
+            background: #1e88e5 !important;
+        }
+
+            .navbar .navbar-brand, .navbar .nav-link {
+                color: #fff !important;
+                font-weight: 500;
+            }
+
+                .navbar .nav-link:hover {
+                    color: #cfe8ff !important;
+                }
+        /* MAIN CONTENT */
+        main {
+            padding-top: 20px;
+            padding-bottom: 25px;
+        }
+        /* FOOTER */
+        footer {
+            background: #fff;
+            padding: 15px 0;
+            color: #6c757d;
+            font-size: 14px;
+            border-top: 1px solid #e3e6ea;
+            text-align: center;
+        }
+        /* CUSTOM ANIMATION */
+        .urgent-flash {
+            animation: flash-red 1s infinite alternate;
+        }
+
+        @@keyframes flash-red {
+            from {
+                background-color: #f8d7da;
+                border-color: #dc3545;
+                box-shadow: 0 0 10px rgba(220, 53, 69, 0.7);
+            }
+
+            to {
+                background-color: #dc3545;
+                border-color: #dc3545;
+                box-shadow: 0 0 15px rgba(220, 53, 69, 1);
+            }
+        }
+
+        .room-tile {
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+            .room-tile:hover {
+                transform: scale(1.1);
+                z-index: 10;
+            }
+    </style>
+</head>
+
+<body>
+    <header>
+        <nav class="navbar navbar-expand-sm shadow-sm">
+            <div class="container">
+                <a class="navbar-brand fw-bold" asp-area="" asp-page="/Index">
+                    <i class="fa-solid fa-house-chimney-crack me-2"></i> Web Báo Hỏng KTX
+                </a>
+
+                <button class="navbar-toggler text-white" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false"
+                        aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav me-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" asp-area="" asp-page="/Index">Trang chủ</a>
+                        </li>
+                    </ul>
+
+                    <!-- LOGIC HIỂN THỊ MENU NGƯỜI DÙNG -->
+                    @using Microsoft.AspNetCore.Http
+                    @inject IHttpContextAccessor HttpContextAccessor
+                    @{
+                        var userId = HttpContextAccessor.HttpContext.Session.GetString("UserIdCode");
+                    }
+
+                    @if (!string.IsNullOrEmpty(userId))
+                    {
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="text-white me-2 small d-none d-md-inline"><i class="fa-solid fa-user me-1"></i> @userId</span>
+
+                            <!-- Nút Đổi Mật Khẩu -->
+                            <button type="button" class="btn btn-warning btn-sm fw-bold text-dark shadow-sm" data-bs-toggle="modal" data-bs-target="#layoutChangePasswordModal">
+                                <i class="fa-solid fa-key"></i> <span class="d-none d-sm-inline">Đổi MK</span>
+                            </button>
+
+                            <!-- Nút Logout -->
+                            <form method="post" asp-page="/Index" asp-page-handler="Logout" class="d-inline">
+                                <button type="submit" class="btn btn-danger btn-sm fw-bold shadow-sm">
+                                    <i class="fa-solid fa-right-from-bracket"></i> <span class="d-none d-sm-inline">Thoát</span>
+                                </button>
+                            </form>
+                        </div>
+                    }
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <div class="container">
+        <main role="main">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer>
+        <div class="container">
+            &copy; 2025 - KTX Report System · <a asp-area="" asp-page="/Privacy">Quyền riêng tư</a>
+        </div>
+    </footer>
+
+    <!-- MODAL ĐỔI MẬT KHẨU (Dùng chung cho toàn trang) -->
+    @if (!string.IsNullOrEmpty(userId))
+    {
+        <div class="modal fade" id="layoutChangePasswordModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-warning text-dark">
+                        <h5 class="modal-title"><i class="fa-solid fa-key me-2"></i>Đổi Mật Khẩu</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form method="post" asp-page="/Index" asp-page-handler="ChangePassword">
+                        <div class="modal-body">
+                            <div class="mb-3"><label class="form-label">Mật khẩu cũ</label><input type="password" name="OldPassword" class="form-control" required /></div>
+                            <div class="mb-3"><label class="form-label">Mật khẩu mới</label><input type="password" name="NewPassword" class="form-control" required /></div>
+                            <div class="mb-3"><label class="form-label">Xác nhận mật khẩu mới</label><input type="password" name="ConfirmPassword" class="form-control" required /></div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                            <button type="submit" class="btn btn-warning">Lưu Thay Đổi</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

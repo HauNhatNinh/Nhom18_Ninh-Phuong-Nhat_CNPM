@@ -1,0 +1,9 @@
+﻿@using System.Text.Json
+@using KTXReportSystem.Models
+@model List<KTXReportSystem.Models.Report>
+
+<div class="card shadow-lg p-3 bg-light mt-5">
+    <h5 class="fw-bold text-danger">DEBUG DATA</h5>
+    <p>Dữ liệu này là JSON được chuyển từ C# sang JS. Nếu rỗng (null) hoặc bị lỗi, tức là lỗi nằm ở Database hoặc Code C#.</p>
+    <pre style="white-space: pre-wrap; word-wrap: break-word; font-size: 10px;">@JsonSerializer.Serialize(Model, new JsonSerializerOptions { WriteIndented = true })</pre>
+</div>

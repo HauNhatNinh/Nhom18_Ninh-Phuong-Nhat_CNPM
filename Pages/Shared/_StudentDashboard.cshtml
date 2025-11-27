@@ -1,0 +1,101 @@
+﻿@model KTXReportSystem.Models.User
+@using KTXReportSystem.Data
+@using Microsoft.EntityFrameworkCore
+@inject ApplicationDbContext DbContext
+
+@functions {
+    public string TranslateStatus(string status)
+    {
+        return status switch { "Pending_Manager" => "Chờ duyệt", "Assigned_Technician" => "Đã phân công", "In_Progress" => "Đang xử lý", "On_Hold" => "Tạm hoãn", "Completed" => "Hoàn thành", "Canceled" => "Đã hủy", _ => status };
+    }
+}
+
+@{
+    var roommates = new List<KTXReportSystem.Models.User>();
+    if (!string.IsNullOrEmpty(Model.RoomId))
+    {
+        roommates = await DbContext.Users.Where(u => u.RoomId == Model.RoomId && u.Role == "student" && u.UserIdCode != Model.UserIdCode).ToListAsync();
+    }
+    var bName = (Model.RoomId != null && Model.RoomId.Length >= 2) ? Model.RoomId.Substring(0, 2) : Model.RoomId;
+    var rName = (Model.RoomId != null && Model.RoomId.Length > 2) ? Model.RoomId.Substring(2) : Model.RoomId;
+}
+
+<div class="container my-4">
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card shadow-lg rounded-3 h-100 p-4 border-start border-primary border-5">
+                <h5 class="card-title text-primary mb-3 fw-bold"><i class="fa-solid fa-id-card me-2"></i> Hồ Sơ</h5>
+                <div class="mb-2"><strong>@Model.FullName</strong></div>
+                <div class="mb-2 text-muted">@Model.UserIdCode</div>
+                <div class="mb-3 fst-italic text-primary">@Model.StudentInfo</div>
+                <hr />
+                <p class="mb-1"><strong>Tòa:</strong> <span class="badge bg-info">@bName</span></p>
+                <p class="mb-3"><strong>Phòng:</strong> <span class="badge bg-primary">@rName</span></p>
+                <h6 class="mt-3 small text-uppercase fw-bold text-secondary">Bạn cùng phòng (@roommates.Count)</h6>
+                <ul class="list-group list-group-flush border rounded">
+                    <li class="list-group-item bg-light"><i class="fa-solid fa-user-check me-2 text-success"></i> <strong>@Model.FullName</strong> <span class="badge bg-secondary ms-1">Bạn</span></li>
+                    @foreach (var m in roommates)
+                    {
+                        <li class="list-group-item"><i class="fa-solid fa-user me-2 text-muted"></i> @m.FullName</li>
+                    }
+                </ul>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card shadow-lg rounded-3 p-4 mb-4">
+                <h5 class="card-title text-danger mb-4 fw-bold"><i class="fa-solid fa-triangle-exclamation me-2"></i> Gửi Báo Cáo</h5>
+                <form method="post" id="student-report-form" asp-page-handler="SubmitReport" enctype="multipart/form-data">
+                    <input type="hidden" name="RoomId" value="@Model.RoomId" /><input type="hidden" name="ReporterUserIdCode" value="@Model.UserIdCode" />
+                    <div class="mb-3"><label class="fw-bold">Sự cố</label><input type="text" name="Title" class="form-control" required placeholder="VD: Hỏng đèn..." /></div>
+                    <div class="mb-3"><label class="fw-bold">Mô tả</label><textarea name="Description" rows="3" class="form-control" required></textarea></div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3"><label class="fw-bold">Mức độ</label><select name="Urgency" class="form-select"><option value="Normal">Thường</option><option value="Emergency">Khẩn cấp</option></select></div>
+                        <div class="col-md-6 mb-3"><label class="fw-bold">Minh chứng</label><input type="file" name="EvidenceFile" class="form-control" accept="image/*,video/*" /></div>
+                    </div>
+                    <button type="submit" class="btn btn-danger w-100 fw-bold"><i class="fa-solid fa-paper-plane me-2"></i> Gửi</button>
+                </form>
+            </div>
+
+            <div class="card shadow-lg rounded-3 p-4">
+                <h5 class="card-title text-primary mb-4 fw-bold"><i class="fa-solid fa-clock-rotate-left me-2"></i> Lịch Sử</h5>
+                @{
+                    var reports = await DbContext.Reports.Where(r => r.ReporterUserIdCode == Model.UserIdCode).OrderByDescending(r => r.SubmissionDate).ToListAsync();
+                    var allTechs = await DbContext.Users.Where(u => u.Role == "technician").ToDictionaryAsync(u => u.UserIdCode, u => u.FullName);
+                }
+                @if (reports.Any())
+                {
+                    <div class="list-group list-group-flush">
+                        @foreach (var r in reports)
+                        {
+                            var stt = TranslateStatus(r.Status);
+                            string techName = (!string.IsNullOrEmpty(r.AssignedToUserIdCode) && allTechs.ContainsKey(r.AssignedToUserIdCode)) ? allTechs[r.AssignedToUserIdCode] : "Chưa phân công";
+                            <div class="list-group-item mb-3 p-3 rounded shadow-sm @(r.Urgency == "Emergency" && r.Status != "Completed" ? "urgent-flash-item" : "")">
+                                <div class="d-flex justify-content-between align-items-center"><h6 class="mb-1 fw-bold text-dark">@r.Title</h6><span class="badge @(r.Status == "Completed" ? "bg-success" : "bg-warning text-dark")">@stt</span></div>
+                                <small class="text-muted">@r.SubmissionDate.ToString("dd/MM/yyyy HH:mm")</small>
+                                @if (!string.IsNullOrEmpty(r.EvidenceBase64))
+                                {
+                                    <div class="small mt-1"><a href="@r.EvidenceBase64" target="_blank" class="text-primary text-decoration-underline">Xem Minh chứng</a></div>
+                                }
+                                @if (!string.IsNullOrEmpty(r.TechnicianUpdate))
+                                {
+                                    <div class="alert alert-info p-2 mt-2 mb-0 small"><i class="fa-solid fa-user-cog me-1"></i> <strong>@techName:</strong> @r.TechnicianUpdate</div>
+                                }
+                                else if (r.Status != "Canceled" && r.Status != "Pending_Manager")
+                                {
+
+                                    <div class="small mt-1 text-muted">Phụ trách: <strong>@techName</strong></div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+
+                    <p class="text-muted text-center">Chưa có báo cáo.</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>

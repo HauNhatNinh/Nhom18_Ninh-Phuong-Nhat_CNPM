@@ -1,0 +1,107 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Hệ thống Báo Hỏng KTX";
+}
+
+<div id="message-box" class="position-fixed top-0 end-0 m-3 px-3 py-2 rounded text-white fw-semibold shadow" style="z-index: 2000; opacity: 0; transition: opacity 0.5s;"></div>
+
+<!-- GIAO DIỆN CHÍNH -->
+@if (Model.CurrentUser == null)
+{
+    <div class="d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+        <div class="card shadow-lg p-4" style="width: 100%; max-width: 420px; border-radius: 16px;">
+            <h3 class="text-center fw-bold text-primary mb-4">Đăng Nhập Hệ Thống</h3>
+            <form method="post" asp-page-handler="Login">
+                <div class="mb-3"><label class="form-label fw-semibold">Tên đăng nhập</label><input type="text" name="Username" class="form-control form-control-lg" required /></div>
+                <div class="mb-4"><label class="form-label fw-semibold">Mật khẩu</label><input type="password" name="Password" class="form-control form-control-lg" required /></div>
+                <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold shadow-sm">Đăng Nhập</button>
+            </form>
+            <hr class="my-4" />
+            <div class="text-center">
+                <button type="button" class="btn btn-outline-success w-100 fw-semibold" data-bs-toggle="modal" data-bs-target="#registerModal">
+                    <i class="fa-solid fa-user-plus me-1"></i> Đăng Ký Tài Khoản SV
+                </button>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="container py-4">
+        <div class="text-end mb-4 me-5 pe-3">
+            <span class="fs-5 fw-bold text-dark">Xin chào, @Model.CurrentUser.FullName</span><br />
+            <span class="text-muted">@(Model.CurrentUser.Role == "student" ? "Sinh viên" : Model.CurrentUser.Role == "manager" ? "Quản lý" : "Kỹ thuật viên")</span>
+        </div>
+        @if (Model.CurrentUser.Role == "student")
+        {
+            <partial name="_StudentDashboard" model="Model.CurrentUser" />
+        }
+        else
+        {
+
+            <partial name="_ManagerTechDashboard" model="Model.CurrentUser" />
+        }
+    </div>
+}
+
+<!-- MODAL ĐĂNG KÝ (Tách Tòa/Phòng) -->
+<div class="modal fade" id="registerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white"><h5 class="modal-title">Đăng Ký Sinh Viên</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <form method="post" asp-page-handler="Register">
+                <div class="modal-body">
+                    <div class="mb-3"><label class="form-label">Mã Sinh Viên (*)</label><input type="text" name="RegUserIdCode" class="form-control" required placeholder="VD: K22..." /></div>
+                    <div class="mb-3"><label class="form-label">Họ và Tên (*)</label><input type="text" name="RegFullName" class="form-control" required /></div>
+                    <div class="mb-3"><label class="form-label">Mật khẩu (*)</label><input type="password" name="RegPassword" class="form-control" required /></div>
+                    <div class="row">
+                        <div class="col-6 mb-3"><label class="form-label">Tòa (*)</label><select name="RegBuilding" class="form-select" required><option value="">Chọn...</option>@foreach (var b in new[] { "K1", "K2", "K3", "K4", "K5", "K6", "A1", "A2", "A3", "A4", "A5" }) {
+                        <option value="@b">@b</option>
+                                                }
+</select></div>
+                        <div class="col-6 mb-3"><label class="form-label">Phòng (*)</label><input type="number" name="RegRoomNum" class="form-control" required placeholder="VD: 505" min="101" max="514" /></div>
+                    </div>
+                    <div class="mb-3"><label class="form-label">Lớp/Khoa</label><input type="text" name="RegStudentInfo" class="form-control" /></div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button><button type="submit" class="btn btn-success">Đăng Ký</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function showMessage(text, type = 'success') {
+            const box = document.getElementById('message-box'); box.textContent = text;
+            box.className = `position-fixed top-0 end-0 m-3 px-3 py-2 rounded text-white fw-semibold shadow opacity-100 ${type === 'error' ? 'bg-danger' : 'bg-success'}`;
+            setTimeout(() => { box.classList.remove('opacity-100'); box.classList.add('opacity-0'); }, 4000);
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            @if (!string.IsNullOrEmpty(Model.LoginError))
+            {
+                <text>showMessage('@Html.Raw(Model.LoginError)', 'error');</text>
+            }
+            @if (!string.IsNullOrEmpty(Model.LoginSuccess))
+            {
+                <text>showMessage('@Html.Raw(Model.LoginSuccess)', 'success');</text>
+            }
+            @if (!string.IsNullOrEmpty(Model.ReportError))
+            {
+                <text>showMessage('@Html.Raw(Model.ReportError)', 'error');</text>
+            }
+            @if (!string.IsNullOrEmpty(Model.ReportSuccess))
+            {
+                <text>showMessage('@Html.Raw(Model.ReportSuccess)', 'success');</text>
+            }
+            @if (!string.IsNullOrEmpty(Model.ActionError))
+            {
+                <text>showMessage('@Html.Raw(Model.ActionError)', 'error');</text>
+            }
+            @if (!string.IsNullOrEmpty(Model.ActionSuccess))
+            {
+                <text>showMessage('@Html.Raw(Model.ActionSuccess)', 'success');</text>
+            }
+        });
+    </script>
+}
